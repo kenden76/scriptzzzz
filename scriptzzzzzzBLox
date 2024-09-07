@@ -121,8 +121,8 @@ end
 
 local function moveto(obj, speed)
     local info = TweenInfo.new(((lp.Character.HumanoidRootPart.Position - obj.Position).Magnitude) / speed, Enum.EasingStyle.Linear)
-    local targetCFrame = obj + Vector3.new(0, 10, 0)
-    local tween = TweenService:Create(lp.Character.HumanoidRootPart, info, {CFrame = targetCFrame})
+    local targetCFrame = obj.Position + Vector3.new(0, 10, 0) -- Make sure to use `.Position` correctly
+    local tween = TweenService:Create(lp.Character.HumanoidRootPart, info, {CFrame = CFrame.new(targetCFrame)})
 
     if not lp.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
         antifall = Instance.new("BodyVelocity", lp.Character.HumanoidRootPart)
@@ -146,7 +146,7 @@ local function startAutoFarm()
             if not autoFarm then return end
             local npc = getNPC()
             if npc then
-                moveto(npc.HumanoidRootPart.CFrame, 100)
+                moveto(npc.HumanoidRootPart, 100) -- Adjusted
                 game:GetService("VirtualUser"):ClickButton1(Vector2.new(9e9, 9e9))
             end
         end)
