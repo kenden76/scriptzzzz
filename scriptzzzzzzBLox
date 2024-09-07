@@ -1,0 +1,172 @@
+local lp = game.Players.LocalPlayer
+local TweenService = game:GetService("TweenService")
+local selectedNPC = "Bandit" -- Default NPC selection
+local autoFarm = false
+local screenGui = Instance.new("ScreenGui")
+local frame = Instance.new("Frame")
+local toggleButton = Instance.new("TextButton")
+local npcSelectorButton = Instance.new("TextButton")
+local npcSelectionFrame = Instance.new("Frame")
+local banditButton = Instance.new("TextButton")
+local npcNameLabel = Instance.new("TextLabel")
+
+screenGui.Parent = game:GetService("StarterGui")
+screenGui.Name = "AutoFarmUI"
+
+frame.Parent = screenGui
+frame.Size = UDim2.new(0, 200, 0, 140)
+frame.Position = UDim2.new(0.5, -100, 0.5, -70)
+frame.BackgroundTransparency = 0.5
+frame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+frame.BorderSizePixel = 0
+frame.Visible = true
+
+-- Toggle Auto Farm Button
+toggleButton.Parent = frame
+toggleButton.Size = UDim2.new(0, 180, 0, 40)
+toggleButton.Position = UDim2.new(0, 10, 0, 10)
+toggleButton.Text = "Auto Farm: Off"
+toggleButton.TextScaled = true
+toggleButton.BackgroundTransparency = 0.3
+toggleButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+toggleButton.TextColor3 = Color3.new(1, 1, 1)
+toggleButton.Font = Enum.Font.SourceSansBold
+
+-- NPC Selector Button
+npcSelectorButton.Parent = frame
+npcSelectorButton.Size = UDim2.new(0, 180, 0, 40)
+npcSelectorButton.Position = UDim2.new(0, 10, 0, 60)
+npcSelectorButton.Text = "NPC Selector"
+npcSelectorButton.TextScaled = true
+npcSelectorButton.BackgroundTransparency = 0.3
+npcSelectorButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+npcSelectorButton.TextColor3 = Color3.new(1, 1, 1)
+npcSelectorButton.Font = Enum.Font.SourceSansBold
+
+-- NPC Name Label
+npcNameLabel.Parent = frame
+npcNameLabel.Size = UDim2.new(0, 180, 0, 20)
+npcNameLabel.Position = UDim2.new(0, 10, 0, 100)
+npcNameLabel.Text = "Selected NPC: Bandit"
+npcNameLabel.TextScaled = true
+npcNameLabel.BackgroundTransparency = 1
+npcNameLabel.TextColor3 = Color3.new(1, 1, 1)
+npcNameLabel.Font = Enum.Font.SourceSansBold
+
+-- NPC Selection Frame (dropdown menu)
+npcSelectionFrame.Parent = screenGui
+npcSelectionFrame.Size = UDim2.new(0, 180, 0, 40)
+npcSelectionFrame.Position = UDim2.new(0.5, -100, 0.5, 80) -- Below the main frame
+npcSelectionFrame.BackgroundTransparency = 0.5
+npcSelectionFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+npcSelectionFrame.BorderSizePixel = 0
+npcSelectionFrame.Visible = false -- Initially hidden
+
+-- Bandit Button
+banditButton.Parent = npcSelectionFrame
+banditButton.Size = UDim2.new(0, 180, 0, 40)
+banditButton.Position = UDim2.new(0, 0, 0, 0)
+banditButton.Text = "Bandit"
+banditButton.TextScaled = true
+banditButton.BackgroundTransparency = 0.3
+banditButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+banditButton.TextColor3 = Color3.new(1, 1, 1)
+banditButton.Font = Enum.Font.SourceSansBold
+
+local noclipE = false
+local antifall = false
+
+-- Function to toggle Auto Farm
+local function toggleAutoFarm()
+    autoFarm = not autoFarm
+    if autoFarm then
+        toggleButton.Text = "Auto Farm: On"
+        startAutoFarm()
+    else
+        toggleButton.Text = "Auto Farm: Off"
+        stopAutoFarm()
+    end
+end
+
+-- NPC selection function
+local function selectNPC(npcName)
+    selectedNPC = npcName
+    npcNameLabel.Text = "Selected NPC: " .. npcName
+    npcSelectionFrame.Visible = false -- Hide the dropdown
+end
+
+-- Auto Farm Functionality
+local function getNPC()
+    local dist, thing = math.huge
+    for i, v in pairs(game:GetService("Workspace").Enemies:GetChildren()) do
+        if v.Name == selectedNPC then -- This will now use the selected NPC name
+            local mag = (lp.Character.HumanoidRootPart.Position - v.HumanoidRootPart.Position).Magnitude
+            if mag < dist then
+                dist = mag
+                thing = v
+            end
+        end
+    end
+    return thing
+end
+
+local function noclip()
+    for i, v in pairs(lp.Character:GetDescendants()) do
+        if v:IsA("BasePart") and v.CanCollide == true then
+            v.CanCollide = false
+            lp.Character.HumanoidRootPart.Velocity = Vector3.new(0,0,0)
+        end
+    end
+end
+
+local function moveto(obj, speed)
+    local info = TweenInfo.new(((lp.Character.HumanoidRootPart.Position - obj.Position).Magnitude) / speed, Enum.EasingStyle.Linear)
+    local targetCFrame = obj + Vector3.new(0, 10, 0)
+    local tween = TweenService:Create(lp.Character.HumanoidRootPart, info, {CFrame = targetCFrame})
+
+    if not lp.Character.HumanoidRootPart:FindFirstChild("BodyVelocity") then
+        antifall = Instance.new("BodyVelocity", lp.Character.HumanoidRootPart)
+        antifall.Velocity = Vector3.new(0, 0, 0)
+        noclipE = game:GetService("RunService").Stepped:Connect(noclip)
+        tween:Play()
+    end
+
+    tween.Completed:Connect(function()
+        antifall:Destroy()
+        noclipE:Disconnect()
+    end)
+end
+
+local autoFarmLoop
+
+local function startAutoFarm()
+    getgenv().bandit = true
+    autoFarmLoop = game:GetService("RunService").Heartbeat:Connect(function()
+        pcall(function()
+            if not autoFarm then return end
+            local npc = getNPC()
+            if npc then
+                moveto(npc.HumanoidRootPart.CFrame, 100)
+                game:GetService("VirtualUser"):ClickButton1(Vector2.new(9e9, 9e9))
+            end
+        end)
+    end)
+end
+
+local function stopAutoFarm()
+    getgenv().bandit = false
+    if autoFarmLoop then
+        autoFarmLoop:Disconnect()
+    end
+end
+
+-- Button Events
+toggleButton.MouseButton1Click:Connect(toggleAutoFarm)
+
+npcSelectorButton.MouseButton1Click:Connect(function()
+    npcSelectionFrame.Visible = not npcSelectionFrame.Visible -- Toggle dropdown visibility
+end)
+
+banditButton.MouseButton1Click:Connect(function()
+    selectNPC("Bandit") -- Select "Bandit"
+end)
