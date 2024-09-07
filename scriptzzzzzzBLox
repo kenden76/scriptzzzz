@@ -1,4 +1,4 @@
-=local lp = game.Players.LocalPlayer
+local lp = game.Players.LocalPlayer
 local TweenService = game:GetService("TweenService")
 local screenGui = Instance.new("ScreenGui")
 local frame = Instance.new("Frame")
@@ -106,7 +106,41 @@ local function startAutoFarm()
             local npc = getNPC()
             if npc then
                 moveto(npc.HumanoidRootPart.CFrame, 100)
-                game:GetService("VirtualUser"):ClickButton1(Vector2.new(9e9, 9e9))
+
+                -- Replacing VirtualUser clicking with your FastAttack and ClickAttack logic
+                if getgenv().Config["FastAttack"] then
+                    pcall(function()
+                        -- Simulating fast attacks with your provided configuration
+                        local StopCamera = require(game.ReplicatedStorage.Util.CameraShaker)
+                        StopCamera:Stop()
+                        
+                        for _, func in pairs(getreg()) do
+                            if typeof(func) == "function" and getfenv(func).script == lp.PlayerScripts.CombatFramework then
+                                for _, upvalue in pairs(debug.getupvalues(func)) do
+                                    if typeof(upvalue) == "table" then
+                                        upvalue.activeController.timeToNextAttack = -(math.huge^math.huge^math.huge)
+                                        upvalue.activeController.attacking = false
+                                        upvalue.activeController.increment = 4
+                                        upvalue.activeController.blocking = false
+                                        upvalue.activeController.hitboxMagnitude = 150
+                                        upvalue.activeController.humanoid.AutoRotate = true
+                                        upvalue.activeController.focusStart = 0
+                                        upvalue.activeController.currentAttackTrack = 0
+                                        sethiddenproperty(lp, "SimulationRaxNerous", math.huge)
+                                    end
+                                end
+                            end
+                        end
+                    end)
+                end
+
+                if getgenv().Config["ClickAttack"] then
+                    -- Simulating ClickAttack by capturing and holding down the button
+                    pcall(function()
+                        game:GetService('VirtualUser'):CaptureController()
+                        game:GetService('VirtualUser'):Button1Down(Vector2.new(0, 1, 0, 1))
+                    end)
+                end
             end
         end)
     end)
